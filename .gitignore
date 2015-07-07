@@ -1,0 +1,7 @@
+*.swp
+*~
+*.pyc
+venv
+venv/*
+*.sh
+migrations/*
