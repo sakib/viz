@@ -4,9 +4,7 @@
 
 ### 1. Set up virtualenv
 
-'''
-$ virtualenv -p python3 venv
-'''
+  $ virtualenv -p python3 venv
 
 ##### activate: 
 
