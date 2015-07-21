@@ -7,9 +7,9 @@ To get set up on the project:
 $ virtualenv -p python3 venv
     
     - to activate: 
-    
-    $ source venv/bin/activate
-    
+'''    
+ source venv/bin/activate
+'''    
     - to deactivate:
     
     $ deactivate
