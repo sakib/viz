@@ -9,13 +9,17 @@ $ virtualenv -p python3 venv
 '''
 
 ##### activate: 
+
 '''
 $ source venv/bin/activate
 ''' 
+
 ##### deactivate:
+
 '''    
 $ deactivate
 ''' 
+
 ### 2. Use pip to install dependencies (in the virtualenv)
 '''    
 $ pip install -r pip.req
