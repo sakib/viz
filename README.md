@@ -5,6 +5,7 @@ To get set up on the project:
 1. Set up virtualenv
 
 $ virtualenv -p python3 venv
+    
     - to activate: 
     
     $ source venv/bin/activate
@@ -12,6 +13,7 @@ $ virtualenv -p python3 venv
     - to deactivate:
     
     $ deactivate
+    
 2. Use pip to install dependencies (in the virtualenv)
     
 $ pip install -r pip.req
