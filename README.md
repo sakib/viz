@@ -3,9 +3,11 @@
 ### To get set up on the project:
 
 ### 1. Set up virtualenv
+
 '''
 $ virtualenv -p python3 venv
 '''
+
 ##### activate: 
 '''
 $ source venv/bin/activate
