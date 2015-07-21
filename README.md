@@ -1,41 +1,20 @@
-## Vizness card application repository, Flask App.
+## Vizness card flask app repo.
 
-To get set up on the project:
+#### To get set up on the project:
 
-1. Set up virtualenv 
+Set up virtualenv: `$ virtualenv -p python3 venv`
+activate virtualenv: `source venv/bin/activate` 
+Use pip to install dependencies in the virtualenv: `$ pip install -r pip.req`
+Run the server: `./run.py`
+deactivate virtualenv: `deactivate`
 
-```$ virtualenv -p python3 venv```
+#### Dependency Resolution:
 
-activate: 
+Ubuntu: `sudo apt-get install mysql-server libmysqlclient-dev systemctl`
+Fedora: `yum install mysql python-migrate postfix systemctl`
 
-'''$ source venv/bin/activate''' 
-
-deactivate:
-
-'''    
-$ deactivate
-''' 
-
-### 2. Use pip to install dependencies (in the virtualenv)
-'''    
-$ pip install -r pip.req
-'''
-### 3. Run the server:
-'''
-$ ./run.py
-'''
-Dependency Resolution:
-
-Ubuntu: 
-
-$ sudo apt-get install mysql-server libmysqlclient-dev systemctl
-
-Fedora: 
-
-$ yum install mysql python-migrate postfix systemctl
-
-Run the following commands:
-
+#### Database Setup:
+```
 $ sudo mysql
 $ create database viz;
 $ create user 'viz'@'localhost' identified by 'viz';
