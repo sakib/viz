@@ -1,27 +1,27 @@
-# Vizness card application repository. Flask App in development.
+## Vizness card application repository, Flask App.
 
-## To get set up on the project:
+### To get set up on the project:
 
-## 1. Set up virtualenv
+### 1. Set up virtualenv
 '''
 $ virtualenv -p python3 venv
 '''
-#### activate: 
+##### activate: 
 '''
 $ source venv/bin/activate
 ''' 
-#### deactivate:
+##### deactivate:
 '''    
 $ deactivate
+''' 
+### 2. Use pip to install dependencies (in the virtualenv)
 '''    
-2. Use pip to install dependencies (in the virtualenv)
-    
 $ pip install -r pip.req
-
-3. Run the server:
-
+'''
+### 3. Run the server:
+'''
 $ ./run.py
-
+'''
 Dependency Resolution:
 
 Ubuntu: 
