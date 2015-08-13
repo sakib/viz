@@ -4,6 +4,7 @@ from util import get_user_json, get_card_json, get_company_json,\
                  get_gallery_json, get_address_json
 from ..__init__ import app, auth
 from ..models import *
+import boto
 
 
 # Testing a resource with login_required
@@ -266,6 +267,16 @@ def verify_password(email_or_token, password):
             return False
     g.user = user
     return True
+
+# Uploads an image to AWS
+@app.route('/upload/image', methods=['POST'])
+@app.route('/upload/image/', methods=['POST'])
+def upload_Image():
+	if request.method == 'POST':
+	   s3 = boto3.resource('s3')
+	   data = request.data;
+	   s3.Bucket('bucket').put_object(Key='filename.jpg', Body=data)
+           return;
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
 # AND FIGURE OUT HOW IMAGE UPLOADS ARE GOING TO WORK.
