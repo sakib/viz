@@ -275,8 +275,11 @@ def upload_Image():
 	if request.method == 'POST':
 	   s3 = boto3.resource('s3')
 	   data = request.data;
-	   s3.Bucket('bucket').put_object(Key='filename.jpg', Body=data)
+	   filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
+	   s3.Bucket('images').put_object(Key=name.join('.jpg'), Body=data)
            return;
+
+#the bucket name mighr need to change
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
 # AND FIGURE OUT HOW IMAGE UPLOADS ARE GOING TO WORK.
