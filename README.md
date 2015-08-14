@@ -14,7 +14,7 @@ Deactivate virtualenv: `deactivate`
 
 ##### Dependency Resolution:
 
-Ubuntu: `sudo apt-get install mysql-server libmysqlclient-dev systemctl`
+Ubuntu: `sudo apt-get install mysql-server libmysqlclient-dev python-dev`
 
 Fedora: `yum install mysql python-migrate postfix systemctl`
 
