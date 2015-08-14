@@ -11,6 +11,7 @@ SQLAlchemy==1.0.8
 Werkzeug==0.10.4
 alembic==0.7.6
 argparse==1.2.1
+boto==2.38.0
 itsdangerous==0.24
 passlib==1.6.2
 wsgiref==0.1.2

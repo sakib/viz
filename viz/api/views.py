@@ -1,7 +1,6 @@
 #!venv/bin/python
 from flask import request, jsonify, url_for, abort, g
-from util import get_user_json, get_card_json, get_company_json,\
-                 get_gallery_json, get_address_json
+import util
 from ..__init__ import app, auth
 from ..models import *
 import boto
@@ -32,7 +31,7 @@ def users():
     if request.method == 'GET':
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
-        users = UserDB.query.limit(lim).offset(off).all()
+        users = get_users(limit=lim, offset=off)
         json_results = map(get_user_json, users)
         return jsonify(users=json_results)
     if request.method == 'POST':
@@ -44,7 +43,7 @@ def users():
             return "1" # missing arguments
         if UserDB.query.filter_by(email=email).first() is not None:
             return "2" # user already exists in db
-        user = UserDB(email=email, name=name, website=website)
+        user = UserDB(email=email, name=name, img_path=img_path)
         user.hash_password(password)
         db.session.add(user)
         db.session.commit()
@@ -76,16 +75,9 @@ def cards():
         lat, lng = location.split(',')
 
         if lat and lng and radius:
-            query = "SELECT id, location, ( 3959 * acos( cos( radians( \
-                    %(latitude)s ) ) * cos( radians( lat ) ) * cos( radians( \
-                    lng ) - radians( %(longitude)s ) ) + sin( radians( \
-                    %(latitude)s ) ) * sin( radians( lat ) ) ) ) AS distance \
-                    FROM sightings HAVING distance < %(radius)s ORDER BY \
-                    distance LIMIT %(limit)s" % {"latitude": lat, \
-                    "longitude": lng, "radius": radius, "limit": lim}
-            all_cards = VizCardDB.query.from_statement(query).all()
+            all_cards = get_cards_by_location(lat, lng, radius, lim)
         else:
-            all_cards = VizCardDB.query.limit(lim).offset(off).all()
+            all_cards = get_cards()
 
         json_cards = map(get_card_json, all_cards)
         return jsonify(cards=json_cards)
@@ -102,8 +94,7 @@ def cards():
         has_address = request.json.get('has_address')
         # Gallery_id will usually be None. People can still share a gallery_id
         # to their friends so others can have the same gallery
-        gallery_id = request.json.get('gallery_id')
-        logo_id = request.json.get('logo_id')
+        logo_path = request.json.get('logo_path')
 
         if email is None or position is None or type is None:
             abort(400) # missing arguments
@@ -173,8 +164,9 @@ def card(email):
 @app.route('/companies/', methods=['POST','GET'])
 def companies():
     if request.method == 'GET':
+        # MAKE THIS EFFICIENT
         companies = CompanyDB.query.all()
-        json_companies = map(get_company_json, companies)
+        json_companies = map(get_company_json, map(lambda x: x.email, companies)) 
         return jsonify(companies=json_companies)
     if request.method == 'POST':
         # Not nullable
@@ -186,11 +178,8 @@ def companies():
         # True or false, does the request contain an address?
         has_address = request.json.get('has_address')
         address_id = request.json.get('address_id')
-        # Gallery_id will usually be None. People can still share a gallery_id
-        # to their friends so others can have the same gallery
-        gallery_id = request.json.get('gallery_id')
         # Usually None. Upload logo in a later registration page.
-        logo_id = request.json.get('logo_id')
+        logo_path = request.json.get('logo_path')
 
         if name is None or email is None:
             abort(400) # missing argument
@@ -268,36 +257,37 @@ def verify_password(email_or_token, password):
     g.user = user
     return True
 
+
 # Uploads an image to AWS
 @app.route('/upload/image', methods=['POST'])
 @app.route('/upload/image/', methods=['POST'])
 def upload_image():
-	if request.method == 'POST':a
-	   s3 = boto3.resource('s3')
-	   data = request.files['file']
-	   filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
-	   s3.Bucket('images').put_object(Key=filename.join('.jpg'), Body=data)
-           return filename.join('.jpg');
+    if request.method == 'POST':
+        s3 = boto3.resource('s3')
+        data = request.files['file']
+        filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
+        s3.Bucket('images').put_object(Key=filename.join('.jpg'), Body=data)
+        return filename.join('.jpg');
 
 
 
 # Gets an image from AWS servers
 @app.route('/images/<file_name>', methods=['GET'])
 def get_image(file_name):
-    if reques.method == 'GET':a
-	s3 = boto3.resource('s3')
-	bucket = s3.Bucket('images')
-	exists = True
-	try:
-	    s3.meta.client.head_bucket(Bucket='images')
-	except ClientError as e:
-	    error_code = int(e.response['Error']['Code'])
-	    if error_code == 404:
-		exists = False
-	if exists
-	   obj = s3.Object(bucket_name='images', key=file_name)
-	   response = obj.get()
-	   data = response['Body'].read()
+    if request.method == 'GET':
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket('images')
+        exists = True
+        try:
+            s3.meta.client.head_bucket(Bucket='images')
+        except ClientError as e:
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                exists = False
+        if exists:
+           obj = s3.Object(bucket_name='images', key=file_name)
+           response = obj.get()
+           data = response['Body'].read()
            return data
 
 
