@@ -259,15 +259,25 @@ def verify_password(email_or_token, password):
 
 
 # Uploads an image to AWS
-@app.route('/upload/image', methods=['POST'])
 @app.route('/upload/image/', methods=['POST'])
+@app.route('/upload/image', methods=['POST'])
 def upload_image():
     if request.method == 'POST':
         s3 = boto3.resource('s3')
         data = request.files['file']
         filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
         s3.Bucket('images').put_object(Key=filename.join('.jpg'), Body=data)
-        return filename.join('.jpg');
+	type = request.json.get('type')
+	if type == 'user':
+	   email = request.json.get('email')
+	   user = UserDB.query.filter_by(email=email).first()
+	   user.img_path = 'images/'.join(filename.join('.jpg'))
+	   db.session.commit()
+	else
+	   card_id = request.json.get('card_id')
+	   card = VizCardDB.query.filter(card_id=card_id).first()
+	   card.logo_path = 'images/'.join(filename.join('.jpg'))
+        return 'images/'.join(filename.join('.jpg'))
 
 
 
