@@ -272,12 +272,34 @@ def verify_password(email_or_token, password):
 @app.route('/upload/image', methods=['POST'])
 @app.route('/upload/image/', methods=['POST'])
 def upload_Image():
-	if request.method == 'POST':
+	if request.method == 'POST':a
 	   s3 = boto3.resource('s3')
-	   data = request.data;
+	   data = request.files['file']
 	   filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
-	   s3.Bucket('images').put_object(Key=name.join('.jpg'), Body=data)
-           return;
+	   s3.Bucket('images').put_object(Key=filename.join('.jpg'), Body=data)
+           return filename.join('.jpg');
+
+
+
+# Gets an image from AWS servers
+@app.route('/images/<file_name>', methods=['GET'])
+def get_image(file_name):
+    if reques.method == 'GET':a
+	s3 = boto3.resource('s3')
+	bucket = s3.Bucket('images')
+	exists = True
+	try:
+	    s3.meta.client.head_bucket(Bucket='images')
+	except ClientError as e:
+	    error_code = int(e.response['Error']['Code'])
+	    if error_code == 404:
+		exists = False
+	if exists
+	   obj = s3.Object(bucket_name='images', key=file_name)
+	   response = obj.get()
+	   data = response['Body'].read()
+           return data
+
 
 #the bucket name mighr need to change
 
