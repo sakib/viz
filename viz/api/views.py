@@ -271,7 +271,7 @@ def verify_password(email_or_token, password):
 # Uploads an image to AWS
 @app.route('/upload/image', methods=['POST'])
 @app.route('/upload/image/', methods=['POST'])
-def upload_Image():
+def upload_image():
 	if request.method == 'POST':a
 	   s3 = boto3.resource('s3')
 	   data = request.files['file']
