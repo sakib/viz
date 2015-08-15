@@ -31,8 +31,12 @@ def users():
     if request.method == 'GET':
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
-        users = get_users(limit=lim, offset=off)
-        json_results = map(get_user_json, users)
+	email = '*' if requst.args.get('email') is None else request.args.get('email')
+	name = '*' if request.args.get('name') is None else request.args.get('name')
+	img_path = '*' if request.args.get('img_path') is None else request.args.get('img_path')
+	
+        users = get_users_json(email = email, name = name, img_path= img_path)
+        
         return jsonify(users=json_results)
     if request.method == 'POST':
         email = request.json.get('email')
@@ -242,7 +246,6 @@ def company_users(company_name):
         cards = VizCardDB.query.filter_by(company_name=company_name).all()
         json_cards = map(get_card_json, cards)
         return jsonify(cards=json_cards)
-
 
 # Decorator for UserDB.verify_password
 @auth.verify_password

@@ -36,6 +36,13 @@ def get_user_json(user_email):
             'img_path': img_path }
 
 
+#Returns users based on the criteria
+def get_users_json(email, name, img_path):
+    query = "SELECT * FROM users WHERE users.email = %(email)s, users.name = %(name)s, users.img_path = %(img_path)s" % {"email" : email, "name" : name, "img_path" : img_path}
+    return jsonify(posts=list(UserDB.query.from_statement(query).all()))
+
+
+
 # Return card info, including owner, contact address, phone, email, photo galleries, etc
 def get_card_json(card):
     if card is None:
