@@ -36,7 +36,7 @@ def get_user_json(user_email):
             'img_path': img_path }
 
 
-#Returns users based on the criteria
+#Returns users based on the criteria, DON'T USE YET, serialization to json doesn't work yet
 def get_users_json(email, name, img_path):
     query = "SELECT * FROM users WHERE users.email = %(email)s, users.name = %(name)s, users.img_path = %(img_path)s" % {"email" : email, "name" : name, "img_path" : img_path}
     return jsonify(posts=list(UserDB.query.from_statement(query).all()))
