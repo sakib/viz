@@ -258,7 +258,7 @@ def verify_password(email_or_token, password):
     return True
 
 
-# Uploads an image to AWS
+# Uploads an image to AWS and returns a file url
 @app.route('/upload/image/', methods=['POST'])
 @app.route('/upload/image', methods=['POST'])
 def upload_image():
