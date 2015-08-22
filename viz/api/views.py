@@ -31,13 +31,13 @@ def users():
     if request.method == 'GET':
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
-	email = '*' if requst.args.get('email') is None else request.args.get('email')
+        email = '*' if request.args.get('email') is None else request.args.get('email')
 	name = '*' if request.args.get('name') is None else request.args.get('name')
 	img_path = '*' if request.args.get('img_path') is None else request.args.get('img_path')
 	
-        users = get_users_json(email = email, name = name, img_path= img_path)
+        users = util.get_users_json(email = email, name = name, img_path= img_path)
         
-        return jsonify(users=json_results)
+        return users
     if request.method == 'POST':
         email = request.json.get('email')
         password = request.json.get('password')
@@ -276,7 +276,7 @@ def upload_image():
 	   user = UserDB.query.filter_by(email=email).first()
 	   user.img_path = 'images/'.join(filename.join('.jpg'))
 	   db.session.commit()
-	else
+        else:
 	   card_id = request.json.get('card_id')
 	   card = VizCardDB.query.filter(card_id=card_id).first()
 	   card.logo_path = 'images/'.join(filename.join('.jpg'))

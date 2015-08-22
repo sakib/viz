@@ -1,6 +1,7 @@
 import os
 from ..models import UserDB, VizCardDB, \
                    CompanyDB, UserDirectoryDB, AddressDB
+from flask import jsonify
 
 # Return users by normal query
 def get_users(limit, offset):
@@ -38,7 +39,9 @@ def get_user_json(user_email):
 
 #Returns users based on the criteria, DON'T USE YET, serialization to json doesn't work yet
 def get_users_json(email, name, img_path):
-    query = "SELECT * FROM users WHERE users.email = %(email)s, users.name = %(name)s, users.img_path = %(img_path)s" % {"email" : email, "name" : name, "img_path" : img_path}
+    query = "SELECT * FROM users"
+    if email != name | email  != img_path:
+        query .=  "WHERE". email != "*" ? "users.email = %(email)s": "" . name != "*" ? ", users.name = %(name)s": "" . img_path !="*" ? ", users.img_path = %(img_path)s":"" % {"email" : email, "name" : name, "img_path" : img_path}
     return jsonify(posts=list(UserDB.query.from_statement(query).all()))
 
 
