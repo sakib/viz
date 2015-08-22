@@ -1,6 +1,6 @@
 #!venv/bin/python
 from flask import request, jsonify, url_for, abort, g
-import util
+from util import *
 from ..__init__ import app, auth
 from ..models import *
 import boto
@@ -31,18 +31,14 @@ def users():
     if request.method == 'GET':
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
-        email = '*' if request.args.get('email') is None else request.args.get('email')
-	name = '*' if request.args.get('name') is None else request.args.get('name')
-	img_path = '*' if request.args.get('img_path') is None else request.args.get('img_path')
-	
-        users = util.get_users_json(email = email, name = name, img_path= img_path)
-        
-        return users
+        users = get_users(limit=lim, offset=off)
+        json_results = map(get_user_json, users)
+        return jsonify(users=json_results)
     if request.method == 'POST':
+        name = request.json.get('name')
         email = request.json.get('email')
         password = request.json.get('password')
-        website = request.json.get('website')
-        name = request.json.get('name')
+        img_path = request.json.get('img_path')
         if email is None or password is None or email is None:
             return "1" # missing arguments
         if UserDB.query.filter_by(email=email).first() is not None:
@@ -81,7 +77,7 @@ def cards():
         if lat and lng and radius:
             all_cards = get_cards_by_location(lat, lng, radius, lim)
         else:
-            all_cards = get_cards()
+            all_cards = get_cards(limit=lim, offset=off)
 
         json_cards = map(get_card_json, all_cards)
         return jsonify(cards=json_cards)

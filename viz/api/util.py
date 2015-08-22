@@ -14,7 +14,7 @@ def get_cards_by_location(lat, lng, radius, lim):
             %(latitude)s ) ) * cos( radians( lat ) ) * cos( radians( \
             lng ) - radians( %(longitude)s ) ) + sin( radians( \
             %(latitude)s ) ) * sin( radians( lat ) ) ) ) AS distance \
-            FROM sightings HAVING distance < %(radius)s ORDER BY \
+            FROM cards HAVING distance < %(radius)s ORDER BY \
             distance LIMIT %(limit)s" % {"latitude": lat, \
             "longitude": lng, "radius": radius, "limit": lim}
     return VizCardDB.query.from_statement(query).all()
@@ -35,15 +35,6 @@ def get_user_json(user_email):
     return {'email': user.email,
             'name': user.name,
             'img_path': img_path }
-
-
-#Returns users based on the criteria, DON'T USE YET, serialization to json doesn't work yet
-def get_users_json(email, name, img_path):
-    query = "SELECT * FROM users"
-    if email != name | email  != img_path:
-        query .=  "WHERE". email != "*" ? "users.email = %(email)s": "" . name != "*" ? ", users.name = %(name)s": "" . img_path !="*" ? ", users.img_path = %(img_path)s":"" % {"email" : email, "name" : name, "img_path" : img_path}
-    return jsonify(posts=list(UserDB.query.from_statement(query).all()))
-
 
 
 # Return card info, including owner, contact address, phone, email, photo galleries, etc
