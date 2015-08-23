@@ -262,17 +262,22 @@ def verify_password(email_or_token, password):
 def upload_image():
     if request.method == 'POST':
         s3 = boto.connect_s3()
+        #get file from POST request
         data = request.files['file']
+        #generate a random file name, 50 chars
         filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
         bucket = s3.get_bucket('vizimages')
         key = bucket.new_key(filename)
+        #put file into key
         key.set_contents_from_file(data)
 	type = request.form.get('type')
+        #put data into user
 	if type == 'user':
 	   email = request.form.get('email')
 	   user = UserDB.query.filter_by(email=email).first()
 	   user.img_path = filename
 	   db.session.commit()
+        #put datas into card
         else:
 	   card_id = request.form.get('card_id')
 	   card = VizCardDB.query.filter_by(card_id=card_id).first()
@@ -286,16 +291,18 @@ def upload_image():
 def get_image(file_name):
     if request.method == 'GET':
         s3 = boto.connect_s3()
+        #get aws bucket
         bucket = s3.get_bucket('vizimages')
+        #find key with matching identifier
         key = bucket.get_key(file_name)
+        #check if key exists
         exists = not key is None
         if exists:
             return redirect(key.generate_url(10))
+        #404, needs to be replaced later
         else:
             return redirect('http://i.imgur.com/gOQCJxw.png')
 
-
-#the bucket name might need to change
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
 # AND FIGURE OUT HOW IMAGE UPLOADS ARE GOING TO WORK.
