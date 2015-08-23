@@ -17,7 +17,7 @@ class UserDB(db.Model):
     __tablename__ = 'users'
     email = db.Column(db.String(50), primary_key=True, index=True, nullable=False)
     name = db.Column(db.String(50))
-    img_path = db.Column(db.String(200))
+    img_path = db.Column(db.String(50))
     pass_hash = db.Column(db.String(128))
 
     def hash_password(self, password):
@@ -61,7 +61,7 @@ class VizCardDB(db.Model):
     email = db.Column(db.String(50), db.ForeignKey('users.email'))
     address_id = db.Column(db.Integer, db.ForeignKey('addresses.address_id'))
     company_email = db.Column(db.String(50), db.ForeignKey('companies.email'))
-    logo_path = db.Column(db.String(200))
+    logo_path = db.Column(db.String(50))
     position = db.Column(db.String(50), nullable=False)
     type = db.Column(db.Integer, nullable=False)
     verified = db.Column(db.Integer, nullable=False)
@@ -94,7 +94,7 @@ class CompanyDB(db.Model):
     email = db.Column(db.String(50), primary_key=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     website = db.Column(db.String(100), nullable=False)
-    logo_path = db.Column(db.String(200))
+    logo_path = db.Column(db.String(50))
     address_id = db.Column(db.Integer, db.ForeignKey('addresses.address_id'))
     phone_num = db.Column(db.String(30))
     # Insert closest address list

@@ -34,7 +34,7 @@ def get_user_json(user_email):
       return None
     return {'email': user.email,
             'name': user.name,
-            'img_path': img_path }
+            'img_path': user.img_path }
 
 
 # Return card info, including owner, contact address, phone, email, photo galleries, etc
@@ -48,14 +48,13 @@ def get_card_json(card):
     address_json = get_address_json(card.address_id)
     company_json = get_company_json(card.company_email)
     return {'email': card.email,
-            'name': card.name,
             'phone_num': card.phone_num,
             'logo_path': card.logo_path,
             'position': card.position,
             'views': card.views,
             'shares': card.shares,
             'verified': card.verified,
-            'type': type,
+            'type': card.type,
             'address': address_json,
             'company': company_json }
 

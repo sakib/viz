@@ -1,9 +1,10 @@
 #!venv/bin/python
-from flask import request, jsonify, url_for, abort, g
+from flask import request, jsonify, url_for, abort, g, redirect
 from util import *
 from ..__init__ import app, auth
 from ..models import *
 import boto
+import random, string
 
 
 # Testing a resource with login_required
@@ -32,7 +33,8 @@ def users():
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
         users = get_users(limit=lim, offset=off)
-        json_results = map(get_user_json, users)
+        json_results = map(get_user_json, (user.email for user in users))
+        print json_results
         return jsonify(users=json_results)
     if request.method == 'POST':
         name = request.json.get('name')
@@ -89,28 +91,25 @@ def cards():
         # Nullable
         website = request.json.get('website')
         phone_num = request.json.get('phone_num')
-        company_name = request.json.get('company_name')
+        company_email = request.json.get('company_email')
         # True or false, does the request contain an address?
         has_address = request.json.get('has_address')
         # Gallery_id will usually be None. People can still share a gallery_id
         # to their friends so others can have the same gallery
         logo_path = request.json.get('logo_path')
+        company = None
+        address_id = None
 
         if email is None or position is None or type is None:
             abort(400) # missing arguments
         if UserDB.query.filter_by(email=email).first() is None:
             abort(400) # card must have an existing owner
 
-        if company_name is not None:
-            company = CompanyDB.query.filter_by(name=company_name).first()
+        if company_email is not None:
+            company = CompanyDB.query.filter_by(company_email=company_email).first()
             if company is None:
                 abort(400) # Not a real company
             logo_id = company.logo_id
-
-        if gallery_id is None:
-            new_gallery = GalleryDB() # Assign new card a new gallery
-            gallery_id = new_gallery.gallery_id
-            db.session.add(new_gallery)
 
         if has_address:
             address1 = request.json.get('address1')
@@ -136,8 +135,8 @@ def cards():
                 address_id = company.address_id # Default address is company's
 
         card = VizCardDB(email=email, address_id=address_id,
-                         gallery_id=gallery_id, company_name=company_name,
-                         logo_id=logo_id, position=position, type=type,
+                         company_email=company_email,
+                         position=position, type=type,
                          phone_num=phone_num, website=website,
                          views=0, shares=0, verified=0)
 
@@ -262,21 +261,23 @@ def verify_password(email_or_token, password):
 @app.route('/upload/image', methods=['POST'])
 def upload_image():
     if request.method == 'POST':
-        s3 = boto3.resource('s3')
+        s3 = boto.connect_s3()
         data = request.files['file']
-        filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
-        s3.Bucket('images').put_object(Key=filename.join('.jpg'), Body=data)
-	type = request.json.get('type')
+        filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
+        bucket = s3.get_bucket('vizimages')
+        key = bucket.new_key(filename)
+        key.set_contents_from_file(data)
+	type = request.form.get('type')
 	if type == 'user':
-	   email = request.json.get('email')
+	   email = request.form.get('email')
 	   user = UserDB.query.filter_by(email=email).first()
-	   user.img_path = 'images/'.join(filename.join('.jpg'))
+	   user.img_path = filename
 	   db.session.commit()
         else:
-	   card_id = request.json.get('card_id')
-	   card = VizCardDB.query.filter(card_id=card_id).first()
-	   card.logo_path = 'images/'.join(filename.join('.jpg'))
-        return 'images/'.join(filename.join('.jpg'))
+	   card_id = request.form.get('card_id')
+	   card = VizCardDB.query.filter_by(card_id=card_id).first()
+	   card.logo_path = filename
+        return filename
 
 
 
@@ -284,23 +285,17 @@ def upload_image():
 @app.route('/images/<file_name>', methods=['GET'])
 def get_image(file_name):
     if request.method == 'GET':
-        s3 = boto3.resource('s3')
-        bucket = s3.Bucket('images')
-        exists = True
-        try:
-            s3.meta.client.head_bucket(Bucket='images')
-        except ClientError as e:
-            error_code = int(e.response['Error']['Code'])
-            if error_code == 404:
-                exists = False
+        s3 = boto.connect_s3()
+        bucket = s3.get_bucket('vizimages')
+        key = bucket.get_key(file_name)
+        exists = not key is None
         if exists:
-           obj = s3.Object(bucket_name='images', key=file_name)
-           response = obj.get()
-           data = response['Body'].read()
-           return data
+            return redirect(key.generate_url(10))
+        else:
+            return redirect('http://i.imgur.com/gOQCJxw.png')
 
 
-#the bucket name mighr need to change
+#the bucket name might need to change
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
 # AND FIGURE OUT HOW IMAGE UPLOADS ARE GOING TO WORK.
