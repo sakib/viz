@@ -265,9 +265,9 @@ def upload_image():
         #get file from POST request
         data = request.files['file']
         #generate a random file name, 50 chars
-        filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))]
+        filename = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(50))
         extension = data.filename.split('.',1)[1]
-        filename = filename + extension
+        filename = filename + '.' + extension
         bucket = s3.get_bucket('vizimages')
         key = bucket.new_key(filename)
         #put file into key
