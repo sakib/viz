@@ -294,7 +294,7 @@ def upload_image():
 def get_image(file_name):
     if request.method == 'GET':
         s3 = boto.connect_s3()
-        #get aws bucket
+        #get aws bucket (are you happy, sakib?)
         bucket = s3.get_bucket('vizimages')
         #find key with matching identifier
         key = bucket.get_key(file_name)
