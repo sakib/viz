@@ -284,6 +284,7 @@ def upload_image():
 	   card_id = request.form.get('card_id')
 	   card = VizCardDB.query.filter_by(card_id=card_id).first()
 	   card.logo_path = filename
+           db.session.commit()
         return filename
 
 
@@ -305,6 +306,23 @@ def get_image(file_name):
         else:
             return redirect('http://i.imgur.com/gOQCJxw.png')
 
+#userdirectory post
+@app.route('/user_directory', methods=['POST', 'GET'])
+@app.route('/user_directory/', methods=['POST', 'GET'])
+def user_directory():
+  if request.method == 'POST':
+      name = request.json.get('name')
+      email = request.json.get('email')
+      card_id = request.json.get('card_id')
+      address_id = request.json.get('address_id')
+      notes = request.json.get('notes')
+      if name is None or email is None or card_id is None or address_id is None:
+        abort(400)
+      if notes is None:
+        notes = ''
+      dire = UserDirectoryDB(name=name, email=email, card_id=card_id, address_id=address_id, notes=notes)
+      db.session.add(dire)
+      db.session.commit()
+  return jsonify({"name": dire.name})
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
-# AND FIGURE OUT HOW IMAGE UPLOADS ARE GOING TO WORK.

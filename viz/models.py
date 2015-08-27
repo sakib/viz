@@ -80,7 +80,8 @@ class UserDirectoryDB(db.Model):
     notes       : string    -> customized notes a user has about a specific card
     """
     __tablename__ = 'userdir'
-    name = db.Column(db.String(200), primary_key=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    name = db.Column(db.String(200),  nullable=False)
     email = db.Column(db.String(50), db.ForeignKey('users.email'), nullable=False)
     card_id = db.Column(db.Integer, db.ForeignKey('cards.card_id'), nullable=False)
     address_id = db.Column(db.Integer, db.ForeignKey('addresses.address_id'))
@@ -107,11 +108,11 @@ class AddressDB(db.Model):
     """
     __tablename__ = 'addresses'
     address_id = db.Column(db.Integer, primary_key=True, nullable=False)
-    address1 = db.Column(db.String(50), nullable=False)
+    address1 = db.Column(db.String(50))
     address2 = db.Column(db.String(50))
-    city = db.Column(db.String(25), nullable=False)
-    state = db.Column(db.String(25), nullable=False)
-    country = db.Column(db.String(50), nullable=False)
-    zip = db.Column(db.String(25), nullable=False)
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
+    city = db.Column(db.String(25))
+    state = db.Column(db.String(25))
+    country = db.Column(db.String(50))
+    zip = db.Column(db.String(25))
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
