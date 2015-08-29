@@ -174,7 +174,7 @@ def companies():
     if request.method == 'GET':
         # MAKE THIS EFFICIENT
         companies = CompanyDB.query.all()
-        json_companies = map(get_company_json, map(lambda x: x.email, companies)) 
+        json_companies = map(get_company_json, map(lambda x: x.email, companies))
         return jsonify(companies=json_companies)
     if request.method == 'POST':
         # Not nullable
@@ -315,24 +315,41 @@ def get_image(file_name):
         else:
             return redirect('http://i.imgur.com/gOQCJxw.png')
 
-#userdirectory post
+# User Directory GET ALL and POST ONE
 @app.route('/user_directory', methods=['POST', 'GET'])
 @app.route('/user_directory/', methods=['POST', 'GET'])
-def user_directory():
-  if request.method == 'POST':
-      name = request.json.get('name')
-      email = request.json.get('email')
-      card_id = request.json.get('card_id')
-      address_id = request.json.get('address_id')
-      notes = request.json.get('notes')
-      if name is None or email is None or card_id is None or address_id is None:
-        abort(400)
-      if notes is None:
-        notes = ''
-      dire = UserDirectoryDB(name=name, email=email, card_id=card_id, address_id=address_id, notes=notes)
-      db.session.add(dire)
-      db.session.commit()
-      return jsonify({"name": dire.name})
+def user_directories():
+    if request.method == 'GET':
+        userdirs = UserDirectoryDB.query.all()
+        json_userdirs = map(get_userdir_json, map(lambda x: x.id, userdirs))
+        return jsonify(userdirs=json_userdirs)
 
+    if request.method == 'POST':
+        name = request.json.get('name')
+        email = request.json.get('email')
+        card_id = request.json.get('card_id')
+        address_id = request.json.get('address_id')
+        notes = request.json.get('notes')
+        if name is None or email is None or card_id is None or address_id is None:
+            abort(400)
+        if notes is None:
+            notes = ''
+        dire = UserDirectoryDB(name=name, email=email, card_id=card_id, address_id=address_id, notes=notes)
+        db.session.add(dire)
+        db.session.commit()
+        return jsonify({"name": dire.name})
+
+
+# Search for user directories pertaining to one user
+@app.route('/user_directory/<user_email>', methods=['GET'])
+@app.route('/user_directory/<user_email>/', methods=['GET'])
+def user_directory(user_email):
+    if request.method == 'GET':
+        user_dirs = UserDirectoryDB.query.filter_by(email=user_email).all()
+        json_userdirs = map(get_userdir_json, map(lambda x: x.id, userdirs))
+        return jsonify(userdirs=json_userdirs)
+
+
+# Search for cards related to one company
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes

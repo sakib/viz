@@ -85,3 +85,21 @@ def get_address_json(address_id):
             'State': address.state,
             'Country': address.country,
             'Zipcode': address.zip }
+
+
+def get_userdir_json(id):
+    userdir = UserDirectoryDB.query.filter_by(id=id).first()
+    if userdir is None:
+        return None
+    address_json = get_address_json(userdir.address_id)
+    card = VizCardDB.query.filter_by(card_id=userdir.card_id).first
+    if card is None:
+      return None
+    card_json = get_card_json(card)
+    return {'id': userdir.id,
+            'name': userdir.name,
+            'email': userdir.email,
+            'card': card_json,
+            'address': address_json,
+            'notes' : userdir.notes }
+
