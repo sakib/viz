@@ -41,10 +41,19 @@ def users():
         email = request.json.get('email')
         password = request.json.get('password')
         img_path = request.json.get('img_path')
-        if email is None or password is None or email is None:
+        if email is None:
             return "1" # missing arguments
-        if UserDB.query.filter_by(email=email).first() is not None:
-            return "2" # user already exists in db
+        user_obj = UserDB.query.filter_by(email=email).first()
+        if user_obj is not None:
+            user_obj.name = user_obj.name if name is None else name
+            user_obj.email = user_obj.email if email is None else email
+            if password is not None:
+                user_obj.hash_password(password)
+            user_obj.img_path = user_obj.img_path if img_path is None else img_path
+            db.session.commit()
+            return "Edited" # user already exists in db
+        else:
+            return "Bad Request"
         user = UserDB(email=email, name=name, img_path=img_path)
         user.hash_password(password)
         db.session.add(user)
@@ -323,6 +332,7 @@ def user_directory():
       dire = UserDirectoryDB(name=name, email=email, card_id=card_id, address_id=address_id, notes=notes)
       db.session.add(dire)
       db.session.commit()
-  return jsonify({"name": dire.name})
+      return jsonify({"name": dire.name})
+
 
 # TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes
