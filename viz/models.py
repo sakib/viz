@@ -46,7 +46,7 @@ class UserDB(db.Model):
 class VizCardDB(db.Model):
     """Card object stores all necessary information for a card on the app
     card_id     : integer   -> primary key
-    email       : string    -> owner of the card, not required
+    email       : string    -> owner of the card
     position    : string    -> position in the company
     address_id  : integer   -> foreignkey into address DB, company addr by default
     phone_num   : string    -> part of the contact info

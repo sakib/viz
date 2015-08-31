@@ -24,53 +24,52 @@ def get_auth_token():
     return jsonify({"token": token.decode('ascii')})
 
 
-# Get: return users with limit or offset fields.
-# Post: user registration
+# Get:  return users with limit or offset fields.
+# Post: creates a new user
 @app.route('/users', methods=['POST','GET'])
 @app.route('/users/', methods=['POST','GET'])
 def users():
-    if request.method == 'GET':
+    if request.method == 'GET': # take limits or offsets
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
         users = get_users(limit=lim, offset=off)
         json_results = map(get_user_json, (user.email for user in users))
-        print json_results
         return jsonify(users=json_results)
-    if request.method == 'POST':
+    if request.method == 'POST': # create new user
         name = request.json.get('name')
         email = request.json.get('email')
         password = request.json.get('password')
         img_path = request.json.get('img_path')
-        if email is None:
-            return "1" # missing arguments
-        user_obj = UserDB.query.filter_by(email=email).first()
-        if user_obj is not None:
-            user_obj.name = user_obj.name if name is None else name
-            user_obj.email = user_obj.email if email is None else email
-            if password is not None:
-                user_obj.hash_password(password)
-            user_obj.img_path = user_obj.img_path if img_path is None else img_path
-            db.session.commit()
-            return "Edited" # user already exists in db
-        else:
-            return "Bad Request"
+        if email is None or password is None: # missing args.
+            return "Missing arguments"
         user = UserDB(email=email, name=name, img_path=img_path)
         user.hash_password(password)
         db.session.add(user)
         db.session.commit()
         return jsonify({'email': user.email}), 201, {'Location': \
                 url_for('user', email=user.email, _external=True)}
+    return "Bad request"
 
 
-# Get a single user by email
-@app.route('/users/<email>', methods=['GET'])
-@app.route('/users/<email>/', methods=['GET'])
+# Get:  returns info on a single user
+# Post: edits an existing user
+@app.route('/users/<email>', methods=['GET','POST'])
+@app.route('/users/<email>/', methods=['GET','POST'])
 def user(email):
-    if request.method == 'GET':
-        print email
+    if request.method == 'GET': # return user info
+        return jsonify(user=get_user_json(email))
+    if request.method == 'POST': # edit user
         user = UserDB.query.filter_by(email=email).first()
-        return jsonify(user=get_user_json(user))
+        if user is None:
+            return "Does not exist"
+        user.name = request.json.get('name')
+        user.img_path = request.json.get('img_path')
+        user.hash_password(request.json.get('password'))
+        db.session.commit()
+        return "Edited"
+    return "Bad request"
 
+####################### ABOVE DONE ##########################
 
 @app.route('/cards', methods=['POST','GET'])
 @app.route('/cards/', methods=['POST','GET'])
@@ -103,8 +102,6 @@ def cards():
         company_email = request.json.get('company_email')
         # True or false, does the request contain an address?
         has_address = request.json.get('has_address')
-        # Gallery_id will usually be None. People can still share a gallery_id
-        # to their friends so others can have the same gallery
         logo_path = request.json.get('logo_path')
         company = None
         address_id = None
@@ -157,14 +154,19 @@ def cards():
 # TEST THAT SHIT OUT ^
 
 
-# By individual email
+# Get: Get list of cards by the owner's email
 @app.route('/cards/<email>', methods=['GET'])
 @app.route('/cards/<email>/', methods=['GET'])
 def card(email):
-    if request.method == 'GET':
+    if request.method == 'GET': # get cards by owner
         cards = VizCardDB.query.filter_by(email=email).all()
-        json_results = map(get_card_json, cards)
-        return jsonify(cards=json_results)
+        return jsonify(cards=map(get_card_json, cards))
+    if request.method == 'POST': # edit cards by owner
+        card_id = request.json.get('card_id')
+        if card_id is None:
+            return "Need card_id to edit a card"
+        # Edit the card here.
+    return "Bad request"
 
 
 # Get and post to all companies
@@ -281,18 +283,18 @@ def upload_image():
         key = bucket.new_key(filename)
         #put file into key
         key.set_contents_from_file(data)
-	type = request.form.get('type')
+        type = request.form.get('type')
         #put data into user
-	if type == 'user':
-	   email = request.form.get('email')
-	   user = UserDB.query.filter_by(email=email).first()
-	   user.img_path = filename
-	   db.session.commit()
+        if type == 'user':
+           email = request.form.get('email')
+           user = UserDB.query.filter_by(email=email).first()
+           user.img_path = filename
+           db.session.commit()
         #put datas into card
         else:
-	   card_id = request.form.get('card_id')
-	   card = VizCardDB.query.filter_by(card_id=card_id).first()
-	   card.logo_path = filename
+           card_id = request.form.get('card_id')
+           card = VizCardDB.query.filter_by(card_id=card_id).first()
+           card.logo_path = filename
            db.session.commit()
         return filename
 

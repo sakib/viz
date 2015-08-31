@@ -47,7 +47,8 @@ def get_card_json(card):
         type = "public"
     address_json = get_address_json(card.address_id)
     company_json = get_company_json(card.company_email)
-    return {'email': card.email,
+    return {'id': card.card_id,
+            'email': card.email,
             'phone_num': card.phone_num,
             'logo_path': card.logo_path,
             'position': card.position,
