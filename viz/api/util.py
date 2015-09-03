@@ -76,11 +76,15 @@ def get_company_json(company_email):
             'address': address_json }
 
 
+# Return information on an address
 def get_address_json(address_id):
     address = AddressDB.query.filter_by(address_id=address_id).first()
     if address is None:
         return None
-    return {'Address 1': address.address1,
+    return {'id': address.address_id,
+            'Latitude': address.latitude,
+            'Longitude': address.longitude,
+            'Address 1': address.address1,
             'Address 2': address.address2,
             'City': address.city,
             'State': address.state,
@@ -88,19 +92,16 @@ def get_address_json(address_id):
             'Zipcode': address.zip }
 
 
+# Return information on a user_directory
 def get_userdir_json(id):
     userdir = UserDirectoryDB.query.filter_by(id=id).first()
     if userdir is None:
         return None
     address_json = get_address_json(userdir.address_id)
-    card = VizCardDB.query.filter_by(card_id=userdir.card_id).first
-    if card is None:
-      return None
-    card_json = get_card_json(card)
-    return {'id': userdir.id,
+    card_json = get_card_json(VizCardDB.query.filter_by(card_id=userdir.card_id).first())
+    return {'id': id,
             'name': userdir.name,
             'email': userdir.email,
+            'notes' : userdir.notes,
             'card': card_json,
-            'address': address_json,
-            'notes' : userdir.notes }
-
+            'address': address_json }

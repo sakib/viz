@@ -61,20 +61,22 @@ def user(email):
     if request.method == 'POST': # edit user
         user = UserDB.query.filter_by(email=email).first()
         if user is None:
-            return "Does not exist"
+            return "A user by that email not exist"
         user.name = request.json.get('name')
         user.img_path = request.json.get('img_path')
         user.hash_password(request.json.get('password'))
         db.session.commit()
-        return "Edited"
+        return jsonify({'email': user.email}), 201, {'Location': \
+                url_for('user', email=user.email, _external=True)}
     return "Bad request"
 
-####################### ABOVE DONE ##########################
 
+# Get:  return cards with limit or offset fields. Also by radius+lat+long
+# Post: creates a new card
 @app.route('/cards', methods=['POST','GET'])
 @app.route('/cards/', methods=['POST','GET'])
 def cards():
-    if request.method == 'GET':
+    if request.method == 'GET': # return all cards based on location or lim/off
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
 
@@ -91,57 +93,42 @@ def cards():
 
         json_cards = map(get_card_json, all_cards)
         return jsonify(cards=json_cards)
-    if request.method == 'POST':
-        # Not nullable
-        email = request.json.get('email')
+    if request.method == 'POST': # create new card
         position = request.json.get('position')
         type = request.json.get('type')
-        # Nullable
+        verified = request.json.get('verified')
+        email = request.json.get('email')
         website = request.json.get('website')
         phone_num = request.json.get('phone_num')
         company_email = request.json.get('company_email')
-        # True or false, does the request contain an address?
-        has_address = request.json.get('has_address')
         logo_path = request.json.get('logo_path')
-        company = None
-        address_id = None
 
-        if email is None or position is None or type is None:
-            abort(400) # missing arguments
-        if UserDB.query.filter_by(email=email).first() is None:
-            abort(400) # card must have an existing owner
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+        address1 = request.json.get('address1')
+        address2 = request.json.get('address2')
+        city = request.json.get('city')
+        state = request.json.get('state')
+        country = request.json.get('country')
+        zip = request.json.get('zip')
 
-        if company_email is not None:
-            company = CompanyDB.query.filter_by(company_email=company_email).first()
-            if company is None:
-                abort(400) # Not a real company
-            logo_id = company.logo_id
+        if email is None or position is None or type is None\
+                or latitude is None or longitude is None:
+            return "Missing arguments" # missing arguments
 
-        if has_address:
-            address1 = request.json.get('address1')
-            address2 = request.json.get('address2')
-            city = request.json.get('city')
-            state = request.json.get('state')
-            country = request.json.get('country')
-            zip = request.json.get('zip')
-            if address1 is None or city is None or state is None\
-                    or country is None or zip is None:
-                abort(400) # missing arguments for address
-            # Query database for duplicate addresses
-            address = AddressDB.query.filter_by(
-                      address1=address1, address2=address2, city=city,
-                      state=state, country=country, zip=zip).first()
-            if not address: # New address
-                address = AddressDB(address1=address1, address2=address2,
-                            city=city, state=state, country=country, zip=zip)
-                db.session.add(address)
-            address_id = address.address_id
-        else:
-            if company is not None:
-                address_id = company.address_id # Default address is company's
+        # query database for duplicate addresses
+        address = AddressDB.query.filter_by(latitude=latitude,
+            longitude=longitude, address1=address1, address2=address2,
+            city=city, state=state, country=country, zip=zip).first()
 
-        card = VizCardDB(email=email, address_id=address_id,
-                         company_email=company_email,
+        if not address: # create new address
+            address = AddressDB(address1=address1, address2=address2,
+                city=city, state=state, country=country, zip=zip,
+                latitude=latitude, longitude=longitude)
+            db.session.add(address)
+
+        card = VizCardDB(email=email, address_id=address.address_id,
+                         company_email=company_email, logo_path=logo_path,
                          position=position, type=type,
                          phone_num=phone_num, website=website,
                          views=0, shares=0, verified=0)
@@ -149,109 +136,313 @@ def cards():
         db.session.add(card)
         db.session.commit()
         return jsonify(get_card_json(card)), 201, {'Location': \
-                url_for('card', email=card.email, _external=True)}
-
-# TEST THAT SHIT OUT ^
+                url_for('card', email_or_card_id=card.email, _external=True)}
 
 
-# Get: Get list of cards by the owner's email
-@app.route('/cards/<email>', methods=['GET'])
-@app.route('/cards/<email>/', methods=['GET'])
-def card(email):
-    if request.method == 'GET': # get cards by owner
-        cards = VizCardDB.query.filter_by(email=email).all()
-        return jsonify(cards=map(get_card_json, cards))
+# Get:  returns info on the cards owned by a user
+# Post: edits an existing user
+@app.route('/cards/<email_or_card_id>', methods=['GET'])
+@app.route('/cards/<email_or_card_id>/', methods=['GET'])
+def card(email_or_card_id):
+
+    if request.method == 'GET': # get cards by card_id, then owner's email
+        card = VizCardDB.query.filter_by(card_id=email_or_card_id).first()
+        if card is None: # try searching by email
+            cards = VizCardDB.query.filter_by(email=email).all()
+            return jsonify(cards=map(get_card_json, cards))
+        return jsonify(card=map(get_card_json, card))
+
     if request.method == 'POST': # edit cards by owner
         card_id = request.json.get('card_id')
         if card_id is None:
-            return "Need card_id to edit a card"
-        # Edit the card here.
+            return "Missing arguments"
+
+        # Edit the card
+        card = VizCardDB.query.filter_by(card_id=card_id).first()
+
+        position = request.json.get('position')
+        type = request.json.get('type')
+        verified = request.json.get('verified')
+
+        if position is not None:
+            card.position = position
+        if type is not None:
+            card.type = type
+        if verified is not None:
+            card.verified = verified
+
+        card.email = request.json.get('email')
+        card.website = request.json.get('website')
+        card.phone_num = request.json.get('phone_num')
+        card.company_email = request.json.get('company_email')
+        card.logo_path = request.json.get('logo_path')
+
+        # Edit card address
+        address = AddressDB.query.filter_by(address_id=card.address_id).first()
+
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+
+        if latitude is not None and longitude is not None:
+            address.latitude = latitude
+            address.longitude = longitude
+            address.address1 = request.json.get('address1')
+            address.address2 = request.json.get('address2')
+            address.city = request.json.get('city')
+            address.state = request.json.get('state')
+            address.country = request.json.get('country')
+            address.zip = request.json.get('zip')
+
+        db.session.commit()
+
+        return jsonify(get_card_json(card)), 201, {'Location': \
+                url_for('card', email_or_card_id=card.email, _external=True)}
+
     return "Bad request"
 
 
-# Get and post to all companies
+# Get:  return all companies by lim/off.
+# Post: creates a new company
 @app.route('/companies', methods=['POST','GET'])
 @app.route('/companies/', methods=['POST','GET'])
 def companies():
-    if request.method == 'GET':
-        # MAKE THIS EFFICIENT
-        companies = CompanyDB.query.all()
-        json_companies = map(get_company_json, map(lambda x: x.email, companies))
-        return jsonify(companies=json_companies)
+
+    if request.method == 'GET': # return companies by limit and/or offset
+        lim = request.args.get('limit', 100)
+        off = request.args.get('offset', 0)
+        companies = CompanyDB.query.limit(limit).offset(offset).all()
+        return jsonify(companies=map(get_company_json, map(lambda x: x.email, companies)))
+
     if request.method == 'POST':
-        # Not nullable
+
         email = request.json.get('email')
         name = request.json.get('name')
-        # Nullable
         website = request.json.get('website')
         phone_num = request.json.get('phone_num')
-        # True or false, does the request contain an address?
-        has_address = request.json.get('has_address')
-        address_id = request.json.get('address_id')
-        # Usually None. Upload logo in a later registration page.
         logo_path = request.json.get('logo_path')
 
-        if name is None or email is None:
-            abort(400) # missing argument
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+        address1 = request.json.get('address1')
+        address2 = request.json.get('address2')
+        city = request.json.get('city')
+        state = request.json.get('state')
+        country = request.json.get('country')
+        zip = request.json.get('zip')
+
+        if email is None or name is None or website is None\
+                or latitude is None or longitude is None:
+            return "Missing arguments" # missing args in request
+        if UserDB.query.filter_by(email=email).first() is None:
+            return "User by that email does not exist"
         if CompanyDB.query.filter_by(name=name).first() is not None:
-            abort(400) # cannot have duplicate company
+            return "Company with that name already exists"
 
-        if gallery_id is None:
-            new_gallery = GalleryDB() # Assign new company a new gallery
-            gallery_id = new_gallery.gallery_id
-            db.session.add(new_gallery)
+        # query database for duplicate addresses
+        address = AddressDB.query.filter_by(latitude=latitude,
+            longitude=longitude, address1=address1, address2=address2,
+            city=city, state=state, country=country, zip=zip).first()
 
-        if has_address:
-            address1 = request.json.get('address1')
-            address2 = request.json.get('address2')
-            city = request.json.get('city')
-            state = request.json.get('state')
-            country = request.json.get('country')
-            zip = request.json.get('zip')
-            if address1 is None or city is None or state is None\
-                    or country is None or zip is None:
-                abort(400) # missing arguments for address
-            # Query database for duplicate addresses
-            address = AddressDB.query.filter_by(
-                      address1=address1, address2=address2, city=city,
-                      state=state, country=country, zip=zip).first()
-            if not address: # New address
-                address = AddressDB(address1=address1, address2=address2,
-                            city=city, state=state, country=country, zip=zip)
-                db.session.add(address)
-            address_id = address.address_id
+        if not address: # create new address
+            address = AddressDB(address1=address1, address2=address2,
+                city=city, state=state, country=country, zip=zip,
+                latitude=latitude, longitude=longitude)
+            db.session.add(address)
 
-        company = CompanyDB(name=name, address_id=address_id,
-                            gallery_id=gallery_id, logo_id=logo_id,
-                            phone_num=phone_num, email=email, website=website)
+        company = CompanyDB(email=email, name=name, website=website,
+                            logo_path=logo_path, phone_num=phone_num,
+                            address_id=address.address_id)
 
         db.session.add(company)
         db.session.commit()
+
         return jsonify(get_card_json(card)), 201, {'Location': \
                 url_for('company', company_name=company.name, _external=True)}
 
-# TEST THIS SHIT TOO ^
+    return "Bad request"
 
 
-# Search for info for one company
+# Get:  returns info on a company by a name
+# Post: edits an existing company
 @app.route('/companies/<company_name>', methods=['GET'])
 @app.route('/companies/<company_name>/', methods=['GET'])
 def company(company_name):
-    if request.method == 'GET':
+    if request.method == 'GET': # return info on company by name
         company = CompanyDB.query.filter_by(name=company_name).first()
+        if company is None: # does not exist
+            return "A company by that name does not exist"
         return jsonify(company=get_company_json(company))
+    if request.method == 'POST': # edit company by that name
+        # Authentication to be done later
+        name = request.json.get('name')
+        email = request.json.get('email')
+        website = request.json.get('website')
+
+        if name is None:
+            return "Missing arguments"
+
+        company = CompanyDB.query.filter_by(name=name).first()
+
+        if company is None: # company to edit must exist
+            return "A company by that name does not exist"
+        if email is not None: # check for auth here
+            company.email = email
+        if website is not None: # not nullable
+            company.website = website
+
+        company.phone_num = request.json.get('phone_num')
+        company.logo_path = request.json.get('logo_path')
+
+        # Edit company address
+        address = AddressDB.query.filter_by(address_id=company.address_id).first()
+
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+
+        if latitude is not None and longitude is not None:
+            address.latitude = latitude
+            address.longitude = longitude
+            address.address1 = request.json.get('address1')
+            address.address2 = request.json.get('address2')
+            address.city = request.json.get('city')
+            address.state = request.json.get('state')
+
+        db.session.commit()
+
+        return jsonify(get_company_json(company.email)), 201, {'Location': \
+                url_for('company', company_name=company.name, _external=True)}
+
+    return "Bad request"
 
 
-# Search for cards related to one company
+# Get:  search for cards related to one company
 @app.route('/companies/<company_name>/cards', methods=['GET'])
 @app.route('/companies/<company_name>/cards/', methods=['GET'])
 def company_users(company_name):
     if request.method == 'GET':
-        if CompanyDB.query.filter_by(name=company_name).first() is None:
-            return None # not a real company
-        cards = VizCardDB.query.filter_by(company_name=company_name).all()
-        json_cards = map(get_card_json, cards)
-        return jsonify(cards=json_cards)
+        company = CompanyDB.query.filter_by(name=company_name).first()
+        if company is None: # does not exist
+            return "A company by that name does not exist"
+        cards = VizCardDB.query.filter_by(company_email=company.email).all()
+        return jsonify(cards=map(get_card_json, cards))
+
+
+# Get:  return user_directories by lim/off
+# Post: creates a new user_directory
+@app.route('/user_directory', methods=['POST', 'GET'])
+@app.route('/user_directory/', methods=['POST', 'GET'])
+def user_directories():
+    if request.method == 'GET': # get all userdirs by lim/off
+        lim = request.args.get('limit', 100)
+        off = request.args.get('offset', 0)
+        userdirs = UserDirectoryDB.query.limit(lim).offset(off).all()
+        json_userdirs = map(get_userdir_json, map(lambda x: x.id, userdirs))
+        return jsonify(userdirs=json_userdirs)
+
+    if request.method == 'POST': # create a userdir entry
+        name = request.json.get('name')
+        email = request.json.get('email')
+        notes = request.json.get('notes')
+        card_id = request.json.get('card_id') # send id of card to connect to
+
+        if name is None or email is None or card_id is None:
+            return "Missing arguments"
+        if notes is None:
+            notes = ''
+
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+        address1 = request.json.get('address1')
+        address2 = request.json.get('address2')
+        city = request.json.get('city')
+        state = request.json.get('state')
+        country = request.json.get('country')
+        zip = request.json.get('zip')
+
+        # query database for duplicate addresses
+        address = AddressDB.query.filter_by(latitude=latitude,
+            longitude=longitude, address1=address1, address2=address2,
+            city=city, state=state, country=country, zip=zip).first()
+
+        if not address: # create new address
+            address = AddressDB(address1=address1, address2=address2,
+                city=city, state=state, country=country, zip=zip,
+                latitude=latitude, longitude=longitude)
+            db.session.add(address)
+
+        udir = UserDirectoryDB(name=name, email=email, card_id=card_id,
+                               address_id=address.address_id, notes=notes)
+        db.session.add(udir)
+        db.session.commit()
+
+        return jsonify(get_userdir_json(udir.id)), 201, {'Location': \
+                url_for('user_directory', user_email_or_id=udir.id, _external=True)}
+
+    return "Bad request"
+
+# Get:  returns info on a user_directory by email
+# Post: edits an existing user_directory
+@app.route('/user_directory/<user_email_or_id>', methods=['GET'])
+@app.route('/user_directory/<user_email_or_id>/', methods=['GET'])
+def user_directory(user_email):
+    if request.method == 'GET': # get a bunch of userdirs by email
+        udir = UserDirectoryDB.query.filter_by(user_email_or_id).first()
+        if udir is None:
+            udirs = UserDirectoryDB.query.filter_by(email=user_email_or_id).all()
+            return jsonify(user_dirs=map(get_userdir_json, map(lambda x: x.id, userdirs)))
+        return jsonify(user_dir=get_userdir_json(udir.id))
+
+    if request.method == 'POST': # edit a current userdir by user_directory id
+        # to do: allow removal of userdirs
+        udir_id = request.json.get('udir_id')
+        if udir_id is None:
+            return "Missing arguments"
+
+        # Edit the udir
+        udir = VizCardDB.query.filter_by(id=udir_id).first()
+
+        if udir is None:
+            return "A user directory by that id does not exist"
+
+        # If delete flag is yes, delete from DB.
+        delete = request.json.get('delete')
+        if request.json.get('delete') == "yes":
+            email = udir.email
+            db.session.delete(udir)
+            db.session.commit()
+            return jsonify(get_userdir_json(udir_id)), 201, {'Location': \
+                url_for('user_directory', user_email_or_id=email, _external=True)}
+
+        udir.notes = request.json.get('notes')
+        name = request.json.get('name')
+        if name is not None:
+            udir.name = name
+
+        # Edit udir address
+        address = AddressDB.query.filter_by(address_id=udir.address_id).first()
+
+        latitude = request.json.get('latitude')
+        longitude = request.json.get('longitude')
+
+        if latitude is not None and longitude is not None:
+            address.latitude = latitude
+            address.longitude = longitude
+            address.address1 = request.json.get('address1')
+            address.address2 = request.json.get('address2')
+            address.city = request.json.get('city')
+            address.state = request.json.get('state')
+            address.country = request.json.get('country')
+            address.zip = request.json.get('zip')
+
+        db.session.commit()
+
+        return jsonify(get_userdir_json(udir.id)), 201, {'Location': \
+                url_for('user_directory', user_email_or_id=udir.id, _external=True)}
+
+    return "Bad request"
+
+
+############ ABOVE DONE BUT NOT TESTED ############
 
 # Decorator for UserDB.verify_password
 @auth.verify_password
@@ -316,42 +507,3 @@ def get_image(file_name):
         #404, needs to be replaced later
         else:
             return redirect('http://i.imgur.com/gOQCJxw.png')
-
-# User Directory GET ALL and POST ONE
-@app.route('/user_directory', methods=['POST', 'GET'])
-@app.route('/user_directory/', methods=['POST', 'GET'])
-def user_directories():
-    if request.method == 'GET':
-        userdirs = UserDirectoryDB.query.all()
-        json_userdirs = map(get_userdir_json, map(lambda x: x.id, userdirs))
-        return jsonify(userdirs=json_userdirs)
-
-    if request.method == 'POST':
-        name = request.json.get('name')
-        email = request.json.get('email')
-        card_id = request.json.get('card_id')
-        address_id = request.json.get('address_id')
-        notes = request.json.get('notes')
-        if name is None or email is None or card_id is None or address_id is None:
-            abort(400)
-        if notes is None:
-            notes = ''
-        dire = UserDirectoryDB(name=name, email=email, card_id=card_id, address_id=address_id, notes=notes)
-        db.session.add(dire)
-        db.session.commit()
-        return jsonify({"name": dire.name})
-
-
-# Search for user directories pertaining to one user
-@app.route('/user_directory/<user_email>', methods=['GET'])
-@app.route('/user_directory/<user_email>/', methods=['GET'])
-def user_directory(user_email):
-    if request.method == 'GET':
-        user_dirs = UserDirectoryDB.query.filter_by(email=user_email).all()
-        json_userdirs = map(get_userdir_json, map(lambda x: x.id, userdirs))
-        return jsonify(userdirs=json_userdirs)
-
-
-# Search for cards related to one company
-
-# TODO: TESTING SHIT ABOVE. ALSO CREATE USERDIR API FOR INDIVIDUAL CARD notes

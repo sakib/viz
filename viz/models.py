@@ -47,7 +47,7 @@ class VizCardDB(db.Model):
     """Card object stores all necessary information for a card on the app
     card_id     : integer   -> primary key
     email       : string    -> owner of the card
-    position    : string    -> position in the company
+    position    : string    -> position of the card owner
     address_id  : integer   -> foreignkey into address DB, company addr by default
     phone_num   : string    -> part of the contact info
     email       : string    -> part of the contact info
@@ -92,13 +92,12 @@ class CompanyDB(db.Model):
     """Company info object
     """
     __tablename__ = 'companies'
-    email = db.Column(db.String(50), primary_key=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), primary_key=True, nullable=False)
+    email = db.Column(db.String(50), nullable=False)
     website = db.Column(db.String(100), nullable=False)
     logo_path = db.Column(db.String(50))
     address_id = db.Column(db.Integer, db.ForeignKey('addresses.address_id'))
     phone_num = db.Column(db.String(30))
-    # Insert closest address list
 
 
 class AddressDB(db.Model):
