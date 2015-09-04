@@ -100,7 +100,7 @@ def cards():
         email = request.json.get('email')
         website = request.json.get('website')
         phone_num = request.json.get('phone_num')
-        company_email = request.json.get('company_email')
+        company_name = request.json.get('company_name')
         logo_path = request.json.get('logo_path')
 
         latitude = request.json.get('latitude')
@@ -128,7 +128,7 @@ def cards():
             db.session.add(address)
 
         card = VizCardDB(email=email, address_id=address.address_id,
-                         company_email=company_email, logo_path=logo_path,
+                         company_name=company_name, logo_path=logo_path,
                          position=position, type=type,
                          phone_num=phone_num, website=website,
                          views=0, shares=0, verified=0)
@@ -148,7 +148,7 @@ def card(email_or_card_id):
     if request.method == 'GET': # get cards by card_id, then owner's email
         card = VizCardDB.query.filter_by(card_id=email_or_card_id).first()
         if card is None: # try searching by email
-            cards = VizCardDB.query.filter_by(email=email).all()
+            cards = VizCardDB.query.filter_by(email=email_or_card_id).all()
             return jsonify(cards=map(get_card_json, cards))
         return jsonify(card=map(get_card_json, card))
 
@@ -174,7 +174,7 @@ def card(email_or_card_id):
         card.email = request.json.get('email')
         card.website = request.json.get('website')
         card.phone_num = request.json.get('phone_num')
-        card.company_email = request.json.get('company_email')
+        card.company_name = request.json.get('company_name')
         card.logo_path = request.json.get('logo_path')
 
         # Edit card address
@@ -210,7 +210,7 @@ def companies():
     if request.method == 'GET': # return companies by limit and/or offset
         lim = request.args.get('limit', 100)
         off = request.args.get('offset', 0)
-        companies = CompanyDB.query.limit(limit).offset(offset).all()
+        companies = CompanyDB.query.limit(lim).offset(off).all()
         return jsonify(companies=map(get_company_json, map(lambda x: x.email, companies)))
 
     if request.method == 'POST':
@@ -384,16 +384,16 @@ def user_directories():
 # Post: edits an existing user_directory
 @app.route('/user_directory/<user_email_or_id>', methods=['GET'])
 @app.route('/user_directory/<user_email_or_id>/', methods=['GET'])
-def user_directory(user_email):
-    if request.method == 'GET': # get a bunch of userdirs by email
-        udir = UserDirectoryDB.query.filter_by(user_email_or_id).first()
+def user_directory(user_email_or_id):
+    if request.method == 'GET': # get userdir by id, if not then a bunch by email
+        udir = UserDirectoryDB.query.filter_by(id=user_email_or_id).first()
         if udir is None:
             udirs = UserDirectoryDB.query.filter_by(email=user_email_or_id).all()
-            return jsonify(user_dirs=map(get_userdir_json, map(lambda x: x.id, userdirs)))
+            return jsonify(user_dirs=map(get_userdir_json, map(lambda x: x.id, udirs)))
         return jsonify(user_dir=get_userdir_json(udir.id))
 
     if request.method == 'POST': # edit a current userdir by user_directory id
-        # to do: allow removal of userdirs
+        # allowed removal of userdirs with the delete = yes parameter
         udir_id = request.json.get('udir_id')
         if udir_id is None:
             return "Missing arguments"

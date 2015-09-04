@@ -60,7 +60,7 @@ class VizCardDB(db.Model):
     card_id = db.Column(db.Integer, primary_key=True, nullable=False)
     email = db.Column(db.String(50), db.ForeignKey('users.email'))
     address_id = db.Column(db.Integer, db.ForeignKey('addresses.address_id'))
-    company_email = db.Column(db.String(50), db.ForeignKey('companies.email'))
+    company_name = db.Column(db.String(50), db.ForeignKey('companies.name'))
     logo_path = db.Column(db.String(50))
     position = db.Column(db.String(50), nullable=False)
     type = db.Column(db.Integer, nullable=False)
