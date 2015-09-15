@@ -1,3 +1,13 @@
+# Error List
+# 0000  Bad Request
+# 0100  
+# 0200  
+# 0300  
+# 0400  
+# 0500  
+
+
+
 #!venv/bin/python
 from flask import request, jsonify, url_for, abort, g, redirect
 from util import *
